@@ -1,0 +1,16 @@
+Metadata-Version: 1.1
+Name: Mr_Demuxy
+Version: 1.2.0
+Summary: demultiplexs combinatorially tagged reads
+Home-page: https://pypi.python.org/pypi/Mr_Demuxy/
+Author: Daniel E. Lefever
+Author-email: lefeverde@gmail.com
+License: MIT
+Description: UNKNOWN
+Platform: any
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Science/Research
+Classifier: Natural Language :: English
+Classifier: Operating System :: POSIX
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics

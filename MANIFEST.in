@@ -1,0 +1,13 @@
+include example_data/example_merged.fastq
+include example_data/example_pe_R1.fastq
+include example_data/example_pe_R2.fastq
+include example_data/forward_bcs.txt
+include example_data/reverse_bcs.txt
+include MANIFEST.in
+include mr_demuxy/*.py
+include README.*
+include setup.py
+include alias_maker.py
+include LICENSE/*.txt
+include bin/*.py
+include ez_setup.py
