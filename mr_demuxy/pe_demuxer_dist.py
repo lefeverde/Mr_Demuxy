@@ -24,7 +24,9 @@ import time
 import os
 import gc
 import tempfile
+import gzip
 import util_functions_dist
+
 
 
 
@@ -38,29 +40,29 @@ start_time = time.time()
 
 
 ## This does the command line parsing ##
-## Probably should include an example input ## 
+## Probably should include an example input ##
 
 parser = argparse.ArgumentParser(add_help=False, description='This program splits \
 combinatorially multiplexed paired-end seqs and outputs a folder for the R1 reads and \
 another for the R2 reads. The two folders contain one fastq file per sample id.',
  usage='\npe_demuxer\
- -r1 r1_seqs.fastq -r2 r2_seqs.fastq -r1_bc r1_bc_file.txt -r2_bc -r2_bc_file.txt') #,add_help=False 
+ -r1 r1_seqs.fastq -r2 r2_seqs.fastq -r1_bc r1_bc_file.txt -r2_bc -r2_bc_file.txt') #,add_help=False
 req = parser.add_argument_group('required arguments')
 opt = parser.add_argument_group('optional arguments')
 
-req.add_argument('-r1_bc',  
-    help = 'BC file for R1 reads', 
+req.add_argument('-r1_bc',
+    help = 'BC file for R1 reads',
     metavar = '',
     required=True)
-req.add_argument('-r2_bc', 
+req.add_argument('-r2_bc',
     help = 'BC file for R2 reads',
     metavar = '' ,
     required=True)
-req.add_argument('-r1', 
+req.add_argument('-r1',
     help = 'R1 fastq file',
     metavar = '',
     required=True)
-req.add_argument('-r2', 
+req.add_argument('-r2',
     help = 'R2 fastq file',
     metavar = '',
     required=True)
@@ -71,30 +73,30 @@ opt.add_argument('-o',
     default = 'pe_demuxer_output',
     metavar = '')
 opt.add_argument('--batch_length',
-    type=int, 
+    type=int,
     default = 1500000,
     help='amount of seqs to be put in a batch \
     only used when check_headers is passed (Default: 1500000)',
     metavar='')
 opt.add_argument('--forward_primer_len',
     help = 'base number of primer/adapter on R1 seq (default: 0)',
-    type=int, 
+    type=int,
     default=0,
     metavar = '')
 
 opt.add_argument('--reverse_primer_len',
     help = 'base number of primer/adapter on R2 seq (default: 0)',
-    type = int, 
+    type = int,
     default = 0,
     metavar = '')
-opt.add_argument('--keep_original_headers', 
-    help = 'pass this arg to keep original headers in demultiplexed fasta/fastq file', 
+opt.add_argument('--keep_original_headers',
+    help = 'pass this arg to keep original headers in demultiplexed fasta/fastq file',
     action='store_true')
 opt.add_argument('--min_seq_length',
     help = 'minimum length of seq to be retained (default: 20)',
     metavar = '',
     default = 20)
-opt.add_argument('--check_headers', 
+opt.add_argument('--check_headers',
     help = 'ensures the R1 and R2 read match before demultiplexing WARNING: this is super slow',
     action = 'store_true')
 
@@ -143,9 +145,9 @@ class PEDemux:
     def __init__(self):
         '''
         The PEDemux class takes care of Paired-end seqs.
-        It demultiplexes by getting the front bits of off 
-        the R1 and R2 read. If the reads are in the same 
-        order and there is an R1 read for every R2 read, 
+        It demultiplexes by getting the front bits of off
+        the R1 and R2 read. If the reads are in the same
+        order and there is an R1 read for every R2 read,
         the alt_pe_loop can be used. Else, use the slow_pe_loop
         which will only get the overlapping set of reads determined
         by header. This is unfortunately much slower.
@@ -157,23 +159,30 @@ class PEDemux:
         self.r2_bc_dict, self.r2_len = self.util_functions_dist.bc_dict_maker(self.args.r2_bc, False)
         self.sam_ind = self.util_functions_dist.sample_index_maker(self.r1_bc_dict, self.r2_bc_dict)
         self.seq_number = 0
-        
+        if self.args.r1.split('.')[-1] == 'gz':
+            fm = 'wb'
+        else:
+            fm = 'w+'
+
         self.r1_file_dict = self.util_functions_dist.outfile_opener(
             self.args.o,
             self.sam_ind,
+            file_mode=fm,
             dir_opt='R1')
-        
+
         self.r2_file_dict = self.util_functions_dist.outfile_opener(
             self.args.o,
             self.sam_ind,
-            dir_opt='R2')
-    
-    
+            file_mode=fm,
+            dir_opt='R2'
+            )
+
+
     # This creates a dict w/ with the seqs and a set w/ #
     # header info #
     def read_set_maker(self, seq_batch):
         '''
-        Returns a dict with the header as key and the seq_rec 
+        Returns a dict with the header as key and the seq_rec
         tuple as item. It also returns a set of headers which
         for determining which overlap.
         '''
@@ -189,13 +198,13 @@ class PEDemux:
                 cur_set.add(hd)
                 read_dict[hd] = seq_rec
         return(read_dict, cur_set)
-    
+
     # function which returns demultiplexed seqs #
     def pe_demultiplexed_seqrec_maker(self, r1_seq_rec, r2_seq_rec):
         '''
         This basically returns a tuple with the sample_id
         and both seq_recs. Fixed the nasty little code duplication
-        from earlier. 
+        from earlier.
 
         Possible stuff to be added in future:
         -fuzzy matching
@@ -206,14 +215,14 @@ class PEDemux:
         demult_header = self.util_functions_dist.demult_header
                 ##
 
-        r1_head, r1_seq, r1_qual = r1_seq_rec 
+        r1_head, r1_seq, r1_qual = r1_seq_rec
         r2_head, r2_seq, r2_qual = r2_seq_rec
         r1_front_bit = r1_seq[0:self.r1_len]
         r2_front_bit = r2_seq[0:self.r2_len]
-        
+
         r1_comb, r1_start = de_bc_loop(r1_front_bit, self.r1_bc_dict)
         r2_comb, r2_start = de_bc_loop(r2_front_bit, self.r2_bc_dict)
-        
+
         cur_r1_seq = r1_seq[(r1_start + self.args.forward_primer_len):len(r1_seq)]
         cur_r1_qual = r1_qual[(r1_start + self.args.forward_primer_len):len(r1_seq)]
         cur_r2_seq = r2_seq[(r2_start + self.args.reverse_primer_len):len(r1_seq)]
@@ -221,14 +230,14 @@ class PEDemux:
 
         sample_id, header = demult_header(r1_comb, r2_comb, self.seq_number, \
             r1_head, self.args.keep_original_headers)
-           
+
 
         r1_demux_seqrec = r1_head, cur_r1_seq, cur_r1_qual
         r2_demux_seqrec = r2_head, cur_r2_seq, cur_r2_qual
 
-        return (sample_id, r1_demux_seqrec, r2_demux_seqrec) 
-   
-   
+        return (sample_id, r1_demux_seqrec, r2_demux_seqrec)
+
+
 
     # Alternate demuxing loop #
     def alt_pe_loop(self, r1_batch, r2_batch):
@@ -236,7 +245,7 @@ class PEDemux:
         Basically does the normal demuxing with the assumption
         that the seqs in both files have a 1 to 1 correspondance
         and are in the same order. No intermediary steps are required
-        as all 192 files are kept open.        
+        as all 192 files are kept open.
 
         '''
         ### Borrowed Functions ####
@@ -244,24 +253,24 @@ class PEDemux:
         demult_header = self.util_functions_dist.demult_header
         sample_index_maker = self.util_functions_dist.sample_index_maker
                     ###
-        
+
         for (r1_cur_rec, r2_cur_rec) in izip(r1_batch, r2_batch):
             self.seq_number = self.seq_number + 1
             if self.seq_number % 1000 == 0:
-                sys.stdout.write('Demultiplexed Seqs: ' '{0}\r'.format(self.seq_number),) 
-                sys.stdout.flush()     
-            
+                sys.stdout.write('Demultiplexed Seqs: ' '{0}\r'.format(self.seq_number),)
+                sys.stdout.flush()
+
             sample_id, r1_demux_seqrec, r2_demux_seqrec = self.pe_demultiplexed_seqrec_maker(
-                r1_cur_rec, 
+                r1_cur_rec,
                 r2_cur_rec)
-            
+
             r1_head, cur_r1_seq, cur_r1_qual = r1_demux_seqrec
             r2_head, cur_r2_seq, cur_r2_qual = r2_demux_seqrec
 
             if (len(cur_r1_seq) < self.args.min_seq_length) or (len(cur_r2_seq) < self.args.min_seq_length):
                 continue
             else:
-                
+
                 r1_cur_fastq = self.r1_file_dict[sample_id]
                 r1_cur_fastq.write('@' + r1_head + \
                     '\n' + cur_r1_seq + '\n' + '+' +'\n' + cur_r1_qual + '\n')
@@ -273,34 +282,34 @@ class PEDemux:
     # main demuxing loop
     def slow_pe_loop(self, r1_seqdict, r1_set, r2_seqdict, r2_set):
         '''
-        Basically does the same as the above function, but uses a set of 
+        Basically does the same as the above function, but uses a set of
         headers from both files so that only reads with headers in both
         will be used.
-        
+
         Really need to fix the duplication problem
 
         '''
-        ### Borrowed Functions ### 
+        ### Borrowed Functions ###
         sample_index_maker = self.util_functions_dist.sample_index_maker
                 ###
-        
+
         pe_set = r1_set & r2_set
         pe_list = list(pe_set)
         r1_reads_dict = sample_index_maker(self.r1_bc_dict, self.r2_bc_dict)
         r2_reads_dict = sample_index_maker(self.r1_bc_dict, self.r2_bc_dict)
-        
+
         for seq_id in pe_list:
             self.seq_number = self.seq_number + 1
             if self.seq_number % 1000 == 0:
-                sys.stdout.write('Demultiplexed Seqs: ' '{0}\r'.format(self.seq_number),) 
+                sys.stdout.write('Demultiplexed Seqs: ' '{0}\r'.format(self.seq_number),)
                 sys.stdout.flush()
 
             r1_cur_rec = r1_seqdict[seq_id]
             r2_cur_rec = r2_seqdict[seq_id]
-            
+
             sample_id, r1_demux_seqrec, r2_demux_seqrec =\
             pe_demultiplexed_seqrec_maker(r1_cur_rec, r2_cur_rec)
-            
+
             r1_reads_dict[sample_id].append(r1_proc_seq)
             r2_reads_dict[sample_id].append(r2_proc_seq)
 
@@ -311,26 +320,30 @@ class PEDemux:
         ## Borrowed functions ##
         ind_fastq_writer = self.util_functions_dist.ind_fastq_writer
                         ##
+        if self.args.r1.split('.')[-1] == 'gz':
+            r1_iter = FastqGeneralIterator(gzip.open(self.args.r1, 'rU'))
+            r2_iter = FastqGeneralIterator(gzip.open(self.args.r2, 'rU'))
+        if self.args.r1.split('.')[-1] == 'fastq':
+            r1_iter = FastqGeneralIterator(open(self.args.r1, 'rU'))
+            r2_iter = FastqGeneralIterator(open(self.args.r2, 'rU'))
 
-        r1_iter = FastqGeneralIterator(open(self.args.r1, 'rU'))
-        r2_iter = FastqGeneralIterator(open(self.args.r2, 'rU'))
 
         if self.args.check_headers is True:
             r1_generator = self.util_functions_dist.batch_iterator(
-                r1_iter, 
+                r1_iter,
                 self.args.batch_length)
             r2_generator = self.util_functions_dist.batch_iterator(
-                r2_iter, 
+                r2_iter,
                 self.args.batch_length)
             for (r1_batch, r2_batch) in izip(r1_generator, r2_generator):
                 cur_r1_dict, cur_r1_set = self.read_set_maker(r1_batch)
                 cur_r2_dict, cur_r2_set = self.read_set_maker(r2_batch)
                 r1_demux_dict, r2_demux_dict = self.slow_pe_loop(
-                    cur_r1_dict, 
-                    cur_r1_set, 
-                    cur_r2_dict, 
+                    cur_r1_dict,
+                    cur_r1_set,
+                    cur_r2_dict,
                     cur_r2_set)
-                
+
                 ind_fastq_writer(r1_demux_dict, self.r1_path, 'R1')
                 ind_fastq_writer(r2_demux_dict, self.r2_path, 'R2')
 
@@ -343,26 +356,14 @@ class PEDemux:
                 )
             for key, r1_file in self.r1_file_dict.iteritems():
                 r1_file.close()
-            
+
             for key, r2_file in self.r2_file_dict.iteritems():
                 r2_file.close()
 
 
-        
+
 
 #if __name__ == '__main__':
 #    pe_class = PEDemux()
 #    pe_class.main_loop()
 print('\n' "Program Runtime: " + str(round(((time.time() - start_time))/60, 3)) + ' (min)' + '\n')
-
-
-    
-
-
-
-
-
-            
-                
-    
-        

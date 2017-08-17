@@ -6,6 +6,7 @@ from __future__ import division
 import sys
 import os
 import itertools
+import gzip
 
 
 
@@ -70,7 +71,7 @@ def get_ambig_complement():
 
 def file_len(fname):
     '''
-taken from 
+taken from
 http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python?lq=1
     '''
     with open(fname) as f:
@@ -89,14 +90,14 @@ def ambig_base_remover(in_seq):
             fixed_seq = fixed_seq + nuc
         if nuc not in nuc_list:
             actual_base = '[' + ambig_base_dict[nuc] + ']'
-            fixed_seq = fixed_seq + actual_base 
+            fixed_seq = fixed_seq + actual_base
     return fixed_seq
 
 
 
 # Simple reverse complementer #
 def reverse_complement(seq):
-    comp_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'} 
+    comp_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
     reversed_seq = seq[::-1]
     rev_comp_seq = ''
     for nuc in reversed_seq:
@@ -119,9 +120,9 @@ def outfile_maker(files_path, sample_dict, dir_opt=None):
         with open(cur_handle, 'w+') as f:
             pass
     return cur_dir
-    
+
 # writes files and leaves open #
-def outfile_opener(files_path, sample_dict, dir_opt=None):
+def outfile_opener(files_path, sample_dict, file_mode='w+', dir_opt=None):
     file_dict = {}
     if dir_opt is None:
         cur_dir = files_path
@@ -133,8 +134,10 @@ def outfile_opener(files_path, sample_dict, dir_opt=None):
         os.makedirs(cur_dir)
     for key in sample_dict.iterkeys():
         cur_handle = os.path.join(cur_dir, (key + fq_end))
-        file_dict[key] = open(cur_handle, 'w+')
-        
+        if file_mode == 'w+':
+            file_dict[key] = open(cur_handle, file_mode)
+        if file_mode == 'wb':
+            file_dict[key] = gzip.open((cur_handle + '.gz'), file_mode)
     return file_dict
 
 
@@ -165,8 +168,8 @@ def trimmed_read(seq, qual, start_pos, end_pos, fp_len, bp_len, infile_extension
         return (cur_seq, cur_qual)
 
 
-# Creates a dict with sampleID as key and 
-# list as item 
+# Creates a dict with sampleID as key and
+# list as item
 def sample_index_maker(dict1, dict2):
     index_dict = {}
     sample_list = []
@@ -198,17 +201,17 @@ def ind_fastq_chunk_writer(cur_index, files_path, dir_opt=None):
         cur_dir = files_path
         fq_end = '.fastq'
     if dir_opt is not None:
-        cur_dir = files_path 
+        cur_dir = files_path
         fq_end = '_' + dir_opt + '.fastq'
     for key, seq_chunk in cur_index.iteritems():
         cur_handle = os.path.join(cur_dir, (key + fq_end))
         with open(cur_handle, 'a+') as f:
             f.write(str(seq_chunk))
-        
+
 
 
 def single_fasta_fastq(seq_rec, file_extension, out_file, out_qual_file, min_seq_length):
-    
+
     header, cur_seq, cur_qual = seq_rec
 
     if file_extension == 'fasta':
@@ -218,17 +221,17 @@ def single_fasta_fastq(seq_rec, file_extension, out_file, out_qual_file, min_seq
             out_file.write('>' + header + '\n' + cur_seq + '\n')
             if out_qual_file is not None:
                 out_qual_file.write('>' + header + '\n' + cur_qual + '\n')
-            
-            
+
+
     if file_extension == 'fastq':
         if len(cur_seq) < min_seq_length:
             return
         else:
             out_file.write('@' + header + '\n' + cur_seq \
             + '\n' + '+' +'\n' + cur_qual + '\n')
-    
-        
-    
+
+
+
 
 # Determines infile format #
 def infile_extension(infile):
@@ -238,7 +241,7 @@ def infile_extension(infile):
            return(str('fastq'))
        if first_char == '>':
            return(str('fasta'))
- 
+
  # This creates a dict w/ with the seqs and a set w/ #
  # header info #
 def read_set_maker( seq_batch):
@@ -257,7 +260,7 @@ def read_set_maker( seq_batch):
 
 def demult_header( r1_id, r2_id, seq_number, orig_header, keep_original_headers):
    if 'Unk' in (r1_id + r2_id):
-       sample_id = 'Unassigned'   
+       sample_id = 'Unassigned'
    if 'Unk' not in (r1_id + r2_id):
        sample_id = r1_id + r2_id
    if keep_original_headers is True:
@@ -321,4 +324,3 @@ def mc_spinner(proc='\n'):
         sys.stdout.flush()
         time.sleep(0.1)
         sys.stdout.write('\b')
-
