@@ -3,7 +3,7 @@
 Created on Fri Feb 12 19:00:29 2016
 
 @author: Daniel Lefever
-@email: lefeverd@uga.edu
+@email: lefeverde@gmail.com
 
 
 This program was written using Biopython:
@@ -16,7 +16,7 @@ http://dx.doi.org/10.1093/bioinformatics/btp163 pmid:19304878
 #!/usr/bin/python
 
 ## These things make the program go ##
-from __future__ import division
+
 
 import sys
 import argparse
@@ -25,13 +25,13 @@ import os
 import gc
 import tempfile
 import gzip
-import util_functions_dist
+#import util_functions_dist
 
 
 
+from . import util_functions_dist
 
-from itertools import izip
-from biopython import FastqGeneralIterator
+from .biopython import FastqGeneralIterator
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from time import sleep
@@ -254,7 +254,7 @@ class PEDemux:
         sample_index_maker = self.util_functions_dist.sample_index_maker
                     ###
 
-        for (r1_cur_rec, r2_cur_rec) in izip(r1_batch, r2_batch):
+        for (r1_cur_rec, r2_cur_rec) in zip(r1_batch, r2_batch):
             self.seq_number = self.seq_number + 1
             if self.seq_number % 1000 == 0:
                 sys.stdout.write('Demultiplexed Seqs: ' '{0}\r'.format(self.seq_number),)
@@ -335,7 +335,7 @@ class PEDemux:
             r2_generator = self.util_functions_dist.batch_iterator(
                 r2_iter,
                 self.args.batch_length)
-            for (r1_batch, r2_batch) in izip(r1_generator, r2_generator):
+            for (r1_batch, r2_batch) in zip(r1_generator, r2_generator):
                 cur_r1_dict, cur_r1_set = self.read_set_maker(r1_batch)
                 cur_r2_dict, cur_r2_set = self.read_set_maker(r2_batch)
                 r1_demux_dict, r2_demux_dict = self.slow_pe_loop(
@@ -354,10 +354,10 @@ class PEDemux:
                 r1_iter,
                 r2_iter
                 )
-            for key, r1_file in self.r1_file_dict.iteritems():
+            for key, r1_file in self.r1_file_dict.items():
                 r1_file.close()
 
-            for key, r2_file in self.r2_file_dict.iteritems():
+            for key, r2_file in self.r2_file_dict.items():
                 r2_file.close()
 
 
@@ -366,4 +366,4 @@ class PEDemux:
 #if __name__ == '__main__':
 #    pe_class = PEDemux()
 #    pe_class.main_loop()
-print('\n' "Program Runtime: " + str(round(((time.time() - start_time))/60, 3)) + ' (min)' + '\n')
+print(('\n' "Program Runtime: " + str(round(((time.time() - start_time))/60, 3)) + ' (min)' + '\n'))

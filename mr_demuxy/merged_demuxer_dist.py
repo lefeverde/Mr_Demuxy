@@ -3,7 +3,7 @@
 Created on Fri Feb 12 19:00:29 2016
 
 @author: Daniel Lefever
-@email: lefeverd@uga.edu
+@email: lefeverde@gmail.com
 
 
 This program was written using Biopython:
@@ -17,7 +17,7 @@ http://dx.doi.org/10.1093/bioinformatics/btp163 pmid:19304878
 
 
 ## These things make the program go ##
-from __future__ import division
+
 
 
 import sys
@@ -26,10 +26,10 @@ import time
 import os
 import gc
 import tempfile
-import util_functions_dist
+from . import util_functions_dist
 
 
-from biopython import FastqGeneralIterator
+from .biopython import FastqGeneralIterator
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from time import sleep
@@ -38,9 +38,9 @@ start_time = time.time()
 
 
 ## This does the command line parsing ##
-## Probably should include an example input ## 
+## Probably should include an example input ##
 
-parser = argparse.ArgumentParser(add_help=False, 
+parser = argparse.ArgumentParser(add_help=False,
     description='This program demultiplexes combinatorially barcoded reads.',
     usage='\nmerged_demuxer -f forward_bcs.txt -r reverse_bcs.txt \
 -i example_merged.fastq  -o demultiplexed_seqs.fasta') #, add_help=False
@@ -49,27 +49,27 @@ opt = parser.add_argument_group('optional arguments')
 req.add_argument('-f',
      help='forward bcs file',
      metavar = '',
-     required=True) 
-req.add_argument('-r', 
+     required=True)
+req.add_argument('-r',
     help = 'reverse bcs file',
     metavar = '',
-    required=True) 
-req.add_argument('-i', 
+    required=True)
+req.add_argument('-i',
     help = 'input merged fastq file',
     metavar = '',
-    required=True) 
+    required=True)
 opt.add_argument('-o',
     help = 'name of output file or folder (default: merged_demuxer_out)',
     default = 'merged_demuxer_out',
-    metavar = '') 
+    metavar = '')
 opt.add_argument('--forward_primer_len',
     help = 'base number of forward primer/adapter (default: 0)',
-    type=int, 
+    type=int,
     default=0,
     metavar = '')
 opt.add_argument('--reverse_primer_len',
     help = 'base number of reverse primer/adapter (default: 0)',
-    type = int, 
+    type = int,
     default = 0,
     metavar = '')
 
@@ -79,20 +79,20 @@ opt.add_argument('--no_rev_comp_reverse_bcs',
     )
 opt.add_argument("-h", "--help", action="help", help="show this help message and exit")
 
-opt.add_argument('--keep_original_headers', 
-    help = 'pass this arg to keep original headers in demultiplexed fasta/fastq file', 
+opt.add_argument('--keep_original_headers',
+    help = 'pass this arg to keep original headers in demultiplexed fasta/fastq file',
     action='store_true')
-opt.add_argument('--write_qual', 
+opt.add_argument('--write_qual',
     action='store_true',
     help='write a qual file containing quality scores')
-opt.add_argument('--individual_fastq', 
+opt.add_argument('--individual_fastq',
     action='store_true',
     help='demultiplex by writing a fastq file for each sample ID')
 opt.add_argument('--min_seq_length',
     help = 'minimum length of seq to be retained (default: 20)',
     metavar = '',
     default = 20)
-opt.add_argument('--file_extension', 
+opt.add_argument('--file_extension',
     default='fasta',
     help='format of the output file (default: fasta)',
     metavar = '')
@@ -101,7 +101,7 @@ opt.add_argument('--file_extension',
 
 example_usage = ('\n\t\t\tHere is an example of how to use this program:\
 \n-f forward_bcs.txt -r reverse_bcs.txt \
--i example_merged.fastq  -o demultiplexed_seqs.fasta')    
+-i example_merged.fastq  -o demultiplexed_seqs.fasta')
 example_forward_bcs = '\nThe -f argument specifies the forward barcode file.\
 The first column needs to correspond to letter (or whatever the front bc specifies)\
 with the second being the barcode sequence.\
@@ -152,7 +152,7 @@ class MergedDemuxer:
     def __init__(self):
         '''
         Class for handling the demultiplexing of merged reads
-        
+
         '''
         self.args = args
         self.util_functions = util_functions_dist
@@ -166,7 +166,7 @@ class MergedDemuxer:
         self.seq_number = 0
         self.infile_extension = self.util_functions.infile_extension(self.args.i)
         self.out_path = os.path.abspath(self.args.o)
-       
+
 
     def demultiplexed_seqrec_maker(self, seq_rec):
         de_bc_loop = self.util_functions.de_bc_loop
@@ -176,37 +176,37 @@ class MergedDemuxer:
         orig_header, seq, qual = seq_rec
         front_subseq = seq[0:self.fbc_len]
         back_subseq = seq[-self.rbc_len:]
-        
+
         front_id, start_pos = de_bc_loop(front_subseq, self.fbc_dict)
-        
+
         back_id, end_pos = de_bc_loop(back_subseq, self.rbc_dict)
 
         cur_seq, cur_qual = trimmed_read(seq, qual, start_pos, end_pos,\
             self.args.forward_primer_len, self.args.reverse_primer_len, self.infile_extension)
-        
+
         sample_id, cur_header = demult_header(front_id, back_id, self.seq_number, orig_header,\
             self.args.keep_original_headers)
 
         demult_seq_rec = (sample_id, orig_header, cur_header, cur_seq, cur_qual)
-        
+
         return demult_seq_rec
 
 
     def merged_demux_loop(self, batch, file_dict=None, out_file=None, out_qual=None):
         '''
-        This is the main demuxing looping 
+        This is the main demuxing looping
 
         '''
         demultiplexed_seqrec_maker = self.demultiplexed_seqrec_maker
-       
+
         for seq_rec in batch:
             self.seq_number = self.seq_number + 1
             if self.seq_number % 1000 == 0:
-                sys.stdout.write('Demuxed Seqs: ' '{0}\r'.format(self.seq_number),) 
+                sys.stdout.write('Demuxed Seqs: ' '{0}\r'.format(self.seq_number),)
                 sys.stdout.flush()
 
             sample_id, orig_header, cur_header, cur_seq, cur_qual = demultiplexed_seqrec_maker(seq_rec)
-            
+
             if self.args.individual_fastq is False:
 
                 if self.args.file_extension == 'fasta':
@@ -219,7 +219,7 @@ class MergedDemuxer:
                         out_file.write('>' + cur_header + '\n' + cur_seq + '\n')
                         out_qual.write('>' + cur_header + '\n' + cur_qual + '\n')
                         continue
-                       
+
                 if self.args.file_extension == 'fastq':
                     if len(cur_seq) < self.args.min_seq_length:
                         continue
@@ -235,26 +235,26 @@ class MergedDemuxer:
                 else:
                     cur_fastq.write('@' + orig_header + \
                     '\n' + cur_seq + '\n' + '+' +'\n' + cur_qual + '\n')
-            
-         
+
+
         return file_dict
 
     def main_loop(self):
         '''
         This is going demultiplex and split everything all in one go,
-        since the files are broken into bits anyhow 
+        since the files are broken into bits anyhow
         '''
         fq_generator = FastqGeneralIterator(open(self.args.i))
         merged_demux_loop = self.merged_demux_loop
 
-        
+
         if self.args.individual_fastq is True:
             file_dict = self.util_functions.outfile_opener(self.out_path, self.sam_ind)
             merged_demux_loop(
                 fq_generator,
                 file_dict = file_dict
                 )
-            for key, file in file_dict.iteritems():
+            for key, file in file_dict.items():
                 file.close()
 
 
@@ -263,8 +263,8 @@ class MergedDemuxer:
                 out_file_open = open((self.out_path + '.' + self.args.file_extension), 'w+')
                 out_qual_open = open((self.out_path + '.qual'), 'w+')
                 merged_demux_loop(
-                    fq_generator, 
-                    out_file=out_file_open, 
+                    fq_generator,
+                    out_file=out_file_open,
                     out_qual=out_qual_open
                     )
                 out_qual_open.close()
@@ -274,11 +274,11 @@ class MergedDemuxer:
             if self.args.write_qual is False:
                 out_file_open = open((self.out_path + '.' + self.args.file_extension), 'w+')
                 merged_demux_loop(
-                    fq_generator, 
+                    fq_generator,
                     out_file=out_file_open
-                    )         
-                out_file_open.close() 
-               
+                    )
+                out_file_open.close()
+
 
 #if __name__ == '__main__':
 
@@ -288,17 +288,4 @@ class MergedDemuxer:
 #    merged_class.main_loop()
 #    sys.dont_write_bytecode = True
 
-print('\n' "Program Runtime: " + str(round(((time.time() - start_time))/60, 3)) + ' (min)' + '\n')
-
-
-    
-
-
-
-
-
-            
-                
-    
-        
-        
+print(('\n' "Program Runtime: " + str(round(((time.time() - start_time))/60, 3)) + ' (min)' + '\n'))

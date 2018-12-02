@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ## These things make the program go ##
-from __future__ import division
+
 
 import sys
 import os
@@ -10,7 +10,7 @@ import gzip
 
 
 
-from biopython import FastqGeneralIterator
+from .biopython import FastqGeneralIterator
 
 sys.dont_write_bytecode = True
 
@@ -115,7 +115,7 @@ def outfile_maker(files_path, sample_dict, dir_opt=None):
         fq_end = '_' + dir_opt + '.fastq'
     if not os.path.exists(cur_dir):
         os.makedirs(cur_dir)
-    for key in sample_dict.iterkeys():
+    for key in sample_dict.keys():
         cur_handle = os.path.join(cur_dir, (key + fq_end))
         with open(cur_handle, 'w+') as f:
             pass
@@ -132,7 +132,7 @@ def outfile_opener(files_path, sample_dict, file_mode='w+', dir_opt=None):
         fq_end = '_' + dir_opt + '.fastq'
     if not os.path.exists(cur_dir):
         os.makedirs(cur_dir)
-    for key in sample_dict.iterkeys():
+    for key in sample_dict.keys():
         cur_handle = os.path.join(cur_dir, (key + fq_end))
         if file_mode == 'w+':
             file_dict[key] = open(cur_handle, file_mode)
@@ -173,8 +173,8 @@ def trimmed_read(seq, qual, start_pos, end_pos, fp_len, bp_len, infile_extension
 def sample_index_maker(dict1, dict2):
     index_dict = {}
     sample_list = []
-    for r1 in dict1.iterkeys():
-        for r2 in dict2.iterkeys():
+    for r1 in dict1.keys():
+        for r2 in dict2.keys():
             sample_list.append(r1 + r2)
     for i in sample_list:
         index_dict[i] = []
@@ -189,7 +189,7 @@ def ind_fastq_writer(cur_index, files_path, dir_opt=None):
     if dir_opt is not None:
         cur_dir = files_path #+ '/' + dir_opt
         fq_end = '_' + dir_opt + '.fastq'
-    for key, seq_list in cur_index.iteritems():
+    for key, seq_list in cur_index.items():
         for seq_rec in seq_list:
             hd, seq, qual = seq_rec
             cur_handle = os.path.join(cur_dir, (key + fq_end))
@@ -203,7 +203,7 @@ def ind_fastq_chunk_writer(cur_index, files_path, dir_opt=None):
     if dir_opt is not None:
         cur_dir = files_path
         fq_end = '_' + dir_opt + '.fastq'
-    for key, seq_chunk in cur_index.iteritems():
+    for key, seq_chunk in cur_index.items():
         cur_handle = os.path.join(cur_dir, (key + fq_end))
         with open(cur_handle, 'a+') as f:
             f.write(str(seq_chunk))
@@ -272,7 +272,7 @@ def demult_header( r1_id, r2_id, seq_number, orig_header, keep_original_headers)
  # This function takes the bc containing bits #
  # and matches them to the dicts #
 def de_bc_loop( sub_seq, bc_dict):
-    for key, bc in bc_dict.iteritems():
+    for key, bc in bc_dict.items():
         if bc in sub_seq:
             comb_id = key
             start_pos = len(bc)
@@ -305,7 +305,7 @@ def batch_iterator( iterator, batch_size) :
         batch = []
         while len(batch) < batch_size :
             try :
-                entry = iterator.next()
+                entry = next(iterator)
             except StopIteration :
                 entry = None
             if entry is None :
@@ -320,7 +320,7 @@ def mc_spinner(proc='\n'):
     sys.stdout.flush()
     spinner = itertools.cycle(['-', '/', '|', '\\'])
     while True:
-        sys.stdout.write(spinner.next())
+        sys.stdout.write(next(spinner))
         sys.stdout.flush()
         time.sleep(0.1)
         sys.stdout.write('\b')
