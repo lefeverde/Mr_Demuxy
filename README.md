@@ -40,12 +40,13 @@ tags to come up with the sample ID.
 Dependencies:
 -------------
 
--   Python 2.7
+-   Python >2.7
 
 
 
 Installation:
 -------------
+pip install Mr_Demuxy
 
     and unarchive the folder. To unarchive the folder, try clicking
     on it. If that doesn’t work, open terminal and change directory to
@@ -66,16 +67,6 @@ Installation:
     anywhere in your directory.
 
 
-### Can I use pip install?
-
-Yes, but for whatever reason, pip install does not execute some extra
-stuff I included in the setup script. The extra stuff basically adds a
-line to your .bash\_profile which puts the local script directory in the
-path. This is so you can call the scripts from anywhere. Also, it will
-remove some stuff leftover from previous Mr. Demuxy versions. In order
-to do this manually, you’ll need to add this to your .bash\_profile:
-
-    export PATH=/full_path_to_scripts/:$PATH
 
 
 
