@@ -46,9 +46,12 @@ Dependencies:
 
 Installation:
 -------------
-pip install Mr_Demuxy
 
-    and unarchive the folder. To unarchive the folder, try clicking
+   ## Recommended Method:
+        pip install Mr_Demuxy
+
+   ## Alternative method:
+    Download and unarchive the folder. To unarchive the folder, try clicking
     on it. If that doesn’t work, open terminal and change directory to
 
         $ tar -xvzf Mr_Demuxy-x.y.z-dist.tar.gz
