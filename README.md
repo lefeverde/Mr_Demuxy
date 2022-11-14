@@ -52,9 +52,9 @@ Installation:
 
    ## Alternative method:
    
- Download and unarchive the folder. To unarchive the folder, 
+1. Download and unarchive the folder. To unarchive the folder, 
  try clicking on it. If that doesn’t work, open terminal
- and change directory to
+ and change directory to where it was downloaded.
 
         $ tar -xvzf Mr_Demuxy-x.y.z-dist.tar.gz
 
@@ -62,13 +62,13 @@ Installation:
     whatever version is downloaded. Also, [relevant
     xkcd](http://xkcd.com/1168/)
 
-1.  Then open up terminal and change directory to wherever the
+2.  Then open up terminal and change directory to wherever the
     unarchived folder lives. Then, install it to your local
     site-packages directory like so:
 
         $ python setup.py install --user
 
-2.  Restart terminal. You should now be able to run the program from
+3.  Restart terminal. You should now be able to run the program from
     anywhere in your directory.
 
 
